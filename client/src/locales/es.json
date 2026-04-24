@@ -1,0 +1,48 @@
+{
+  "app": {
+    "name": "AI Fitness Coach",
+    "tagline": "Tu Asistente Personal de Entrenamiento con IA"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "workouts": "Entrenamientos",
+    "golf": "Golf",
+    "running": "Carrera",
+    "team": "Equipo",
+    "recovery": "Recuperacion",
+    "calendar": "Calendario",
+    "progress": "Progreso",
+    "export": "Exportar",
+    "notifications": "Notificaciones",
+    "profile": "Perfil",
+    "settings": "Ajustes",
+    "logout": "Cerrar Sesion",
+    "toggleTheme": "Cambiar Tema"
+  },
+  "auth": {
+    "signIn": "Iniciar Sesion",
+    "signUp": "Registrarse",
+    "email": "Correo",
+    "password": "Contrasena",
+    "name": "Nombre",
+    "forgotPassword": "Olvidaste tu contrasena?",
+    "fillDemo": "Llenar Credenciales Demo",
+    "signingIn": "Iniciando sesion..."
+  },
+  "dashboard": {
+    "chooseModule": "Elige Tu Modulo de Entrenamiento",
+    "selectFeature": "Selecciona una funcion para comenzar tu viaje de fitness con IA",
+    "getStarted": "Comenzar"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar...",
+    "loading": "Cargando...",
+    "noData": "Sin datos disponibles",
+    "confirm": "Estas seguro?"
+  }
+}

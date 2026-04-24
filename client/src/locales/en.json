@@ -1,0 +1,48 @@
+{
+  "app": {
+    "name": "AI Fitness Coach",
+    "tagline": "Your Personal AI-Powered Training Assistant"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "workouts": "Workouts",
+    "golf": "Golf",
+    "running": "Running",
+    "team": "Team",
+    "recovery": "Recovery",
+    "calendar": "Calendar",
+    "progress": "Progress",
+    "export": "Export",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout",
+    "toggleTheme": "Toggle Theme"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "forgotPassword": "Forgot Password?",
+    "fillDemo": "Fill Demo Credentials",
+    "signingIn": "Signing in..."
+  },
+  "dashboard": {
+    "chooseModule": "Choose Your Training Module",
+    "selectFeature": "Select a feature below to start your AI-powered fitness journey",
+    "getStarted": "Get Started"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search...",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "confirm": "Are you sure?"
+  }
+}
