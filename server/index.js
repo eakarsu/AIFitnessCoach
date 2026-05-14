@@ -8,6 +8,22 @@ const { Pool } = require('pg');
 const logger = require('./utils/logger');
 const { generalLimiter, authLimiter, aiLimiter } = require('./middleware/rateLimiter');
 const auditLog = require('./middleware/audit');
+const { assertOpenRouterConfigured } = require('./utils/openrouter');
+
+// Fail fast in production if critical secrets are missing.
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.JWT_SECRET) {
+    logger.error('JWT_SECRET is required in production. Refusing to start.');
+    process.exit(1);
+  }
+}
+// Warn (dev) or throw (prod) when OpenRouter is not configured.
+try {
+  assertOpenRouterConfigured();
+} catch (err) {
+  logger.error(err.message);
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -79,6 +95,8 @@ const progressRoutes = require('./routes/progress');
 const uploadRoutes = require('./routes/uploads');
 const adminRoutes = require('./routes/admin');
 const contactRoutes = require('./routes/contact');
+const passwordResetRoutes = require('./routes/passwordReset');
+const aiNewRoutes = require('./routes/aiNew');
 
 // Audit logging middleware for all write operations
 app.use('/api', auditLog);
@@ -100,6 +118,18 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/auth', passwordResetRoutes);
+app.use('/api/ai', aiNewRoutes);
+// Pass-5 backlog: NEEDS-CREDS wearable + payments stubs, NEEDS-PRODUCT-DECISION marketplace + challenges
+app.use('/api/integrations', require('./routes/integrations'));
+app.use('/api/marketplace', require('./routes/marketplace'));
+app.use('/api/agentic-coach', require('./routes/agenticCoach'));
+app.use('/api/form-analysis', require('./routes/formAnalysis'));
+app.use('/api/biometric-ingest', require('./routes/biometricIngest'));
+app.use('/api/predictive-performance', require('./routes/predictivePerformance'));
+app.use('/api/injury-prediction', require('./routes/injuryPrediction'));
+app.use('/api/group-challenges', require('./routes/groupChallenges'));
+app.use('/api/recovery-protocols', require('./routes/recoveryProtocols'));
 
 // Enhanced health check
 app.get('/api/health', async (req, res) => {
@@ -148,6 +178,14 @@ app.use((err, req, res, next) => {
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
+
+
+// === Batch 03 Gaps & Frontend Mounts ===
+try {
+  const _batch03 = require('./routes/batch03Gaps');
+  if (typeof authenticateToken === 'function') app.use('/api', authenticateToken, _batch03);
+  else app.use('/api', _batch03);
+} catch (_e) { /* batch03 gap routes optional */ }
 
 app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);

@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { authValidation } = require('../middleware/validate');
+const { getJwtSecret } = require('../middleware/auth');
 
 // Login
 router.post('/login', authValidation.login, async (req, res) => {
@@ -26,13 +27,13 @@ router.post('/login', authValidation.login, async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'secret',
+      getJwtSecret(),
       { expiresIn: '24h' }
     );
 
     const refreshToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'secret',
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -87,7 +88,7 @@ router.post('/register', authValidation.register, async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'secret',
+      getJwtSecret(),
       { expiresIn: '24h' }
     );
 
@@ -110,7 +111,7 @@ router.get('/verify', async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const decoded = jwt.verify(token, getJwtSecret());
     res.json({ valid: true, user: decoded });
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' });
@@ -126,17 +127,17 @@ router.post('/refresh', async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET || 'secret');
+    const decoded = jwt.verify(refreshToken, getJwtSecret());
 
     const newToken = jwt.sign(
       { id: decoded.id, email: decoded.email, role: decoded.role },
-      process.env.JWT_SECRET || 'secret',
+      getJwtSecret(),
       { expiresIn: '24h' }
     );
 
     const newRefreshToken = jwt.sign(
       { id: decoded.id, email: decoded.email, role: decoded.role },
-      process.env.JWT_SECRET || 'secret',
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 

@@ -1,68 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const https = require('https');
-
-// OpenRouter API call helper
-const callOpenRouter = async (prompt, systemPrompt) => {
-  return new Promise((resolve, reject) => {
-    const data = JSON.stringify({
-      model: process.env.OPENROUTER_MODEL || 'anthropic/claude-haiku-4.5',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt }
-      ],
-      max_tokens: 10000,
-      temperature: 0.7
-    });
-
-    const options = {
-      hostname: 'openrouter.ai',
-      path: '/api/v1/chat/completions',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'http://localhost:3000',
-        'X-Title': 'AI Fitness Coach'
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      let responseData = '';
-
-      res.on('data', (chunk) => {
-        responseData += chunk;
-      });
-
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(responseData);
-          if (parsed.choices && parsed.choices[0]) {
-            resolve(parsed.choices[0].message.content);
-          } else if (parsed.error) {
-            reject(new Error(parsed.error.message || 'API Error'));
-          } else {
-            resolve(responseData);
-          }
-        } catch (e) {
-          reject(e);
-        }
-      });
-    });
-
-    req.on('error', (e) => {
-      reject(e);
-    });
-
-    req.write(data);
-    req.end();
-  });
-};
+const { authenticateToken } = require('../middleware/auth');
+const { callOpenRouter, extractCaloriesFromText } = require('../utils/openrouter');
 
 // AI Workout Generator
-router.post('/workout/generate', async (req, res) => {
+router.post('/workout/generate', authenticateToken, async (req, res) => {
   const pool = req.app.locals.pool;
-  const { fitnessLevel, goals, duration, equipment, focusAreas, user_id } = req.body;
+  const { fitnessLevel, goals, duration, equipment, focusAreas } = req.body;
+  const user_id = req.user.id;
 
   const systemPrompt = `You are an expert fitness coach and workout designer. Create detailed, safe, and effective workout plans.
   Always include warm-up and cool-down. Format your response as a structured workout plan with:
@@ -94,10 +39,17 @@ router.post('/workout/generate', async (req, res) => {
       content: response
     };
 
+    // Extract calories burned from AI text — falls back to a sensible default
+    // based on duration if the model didn't print a number we could match.
+    const extracted = extractCaloriesFromText(response);
+    const caloriesEstimate = extracted != null
+      ? extracted
+      : Math.max(50, Math.round((duration || 45) * 7));
+
     // Save AI-generated workout to database
     const saved = await pool.query(
       'INSERT INTO workouts (user_id, name, type, difficulty, duration, calories, ai_generated, ai_analysis) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [user_id || 1, `AI Workout - ${goals || 'General fitness'}`, focusAreas || 'Full body', fitnessLevel || 'Intermediate', duration || 45, 0, true, JSON.stringify(analysis)]
+      [user_id, `AI Workout - ${goals || 'General fitness'}`, focusAreas || 'Full body', fitnessLevel || 'Intermediate', duration || 45, caloriesEstimate, true, JSON.stringify(analysis)]
     );
 
     res.json({
@@ -112,7 +64,7 @@ router.post('/workout/generate', async (req, res) => {
 });
 
 // AI Golf Swing Analyzer
-router.post('/golf/analyze', async (req, res) => {
+router.post('/golf/analyze', authenticateToken, async (req, res) => {
   const pool = req.app.locals.pool;
   const { id, club_type, swing_speed, ball_speed, launch_angle, spin_rate, carry_distance, total_distance, notes } = req.body;
 
@@ -145,7 +97,6 @@ router.post('/golf/analyze', async (req, res) => {
       content: response
     };
 
-    // Save AI analysis to database if we have an existing record
     if (id) {
       await pool.query(
         'UPDATE golf_swings SET ai_analysis = $1 WHERE id = $2',
@@ -153,10 +104,7 @@ router.post('/golf/analyze', async (req, res) => {
       );
     }
 
-    res.json({
-      success: true,
-      analysis
-    });
+    res.json({ success: true, analysis });
   } catch (err) {
     console.error('AI Golf Analysis Error:', err);
     res.status(500).json({ error: 'Failed to analyze golf swing', details: err.message });
@@ -164,7 +112,7 @@ router.post('/golf/analyze', async (req, res) => {
 });
 
 // AI Running Coach - Pace Optimization
-router.post('/running/analyze', async (req, res) => {
+router.post('/running/analyze', authenticateToken, async (req, res) => {
   const pool = req.app.locals.pool;
   const { id, distance, duration, pace, heart_rate_avg, heart_rate_max, elevation_gain, terrain, weather, goals, notes } = req.body;
 
@@ -200,7 +148,6 @@ router.post('/running/analyze', async (req, res) => {
       content: response
     };
 
-    // Save AI analysis to database if we have an existing record
     if (id) {
       await pool.query(
         'UPDATE running_sessions SET ai_analysis = $1 WHERE id = $2',
@@ -208,10 +155,7 @@ router.post('/running/analyze', async (req, res) => {
       );
     }
 
-    res.json({
-      success: true,
-      analysis
-    });
+    res.json({ success: true, analysis });
   } catch (err) {
     console.error('AI Running Analysis Error:', err);
     res.status(500).json({ error: 'Failed to analyze running session', details: err.message });
@@ -219,7 +163,7 @@ router.post('/running/analyze', async (req, res) => {
 });
 
 // AI Team Formation Optimizer
-router.post('/team/optimize', async (req, res) => {
+router.post('/team/optimize', authenticateToken, async (req, res) => {
   const pool = req.app.locals.pool;
   const { id, team_name, sport, formation, players, strategy, opponent, notes } = req.body;
 
@@ -253,7 +197,6 @@ router.post('/team/optimize', async (req, res) => {
       content: response
     };
 
-    // Save AI analysis to database if we have an existing record
     if (id) {
       await pool.query(
         'UPDATE team_formations SET ai_analysis = $1 WHERE id = $2',
@@ -261,10 +204,7 @@ router.post('/team/optimize', async (req, res) => {
       );
     }
 
-    res.json({
-      success: true,
-      analysis
-    });
+    res.json({ success: true, analysis });
   } catch (err) {
     console.error('AI Team Optimization Error:', err);
     res.status(500).json({ error: 'Failed to optimize team formation', details: err.message });
@@ -272,9 +212,10 @@ router.post('/team/optimize', async (req, res) => {
 });
 
 // AI Recovery Advisor
-router.post('/recovery/advise', async (req, res) => {
+router.post('/recovery/advise', authenticateToken, async (req, res) => {
   const pool = req.app.locals.pool;
-  const { activity_type, intensity, duration, muscle_groups, current_soreness, sleep_quality, stress_level, goals, notes, user_id } = req.body;
+  const { activity_type, intensity, duration, muscle_groups, current_soreness, sleep_quality, stress_level, goals, notes } = req.body;
+  const user_id = req.user.id;
 
   const systemPrompt = `You are an expert sports recovery specialist and physical therapist. Provide comprehensive recovery advice including:
   - Recovery timeline assessment
@@ -309,10 +250,9 @@ router.post('/recovery/advise', async (req, res) => {
       content: response
     };
 
-    // Save AI-generated recovery plan to database
     const saved = await pool.query(
       'INSERT INTO recovery_plans (user_id, name, recovery_type, duration, intensity, sleep_hours, notes, ai_analysis) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [user_id || 1, `AI Recovery - ${activity_type || 'General'}`, activity_type || 'Active Recovery', duration || 3, intensity || 'Light', 8, notes || '', JSON.stringify(analysis)]
+      [user_id, `AI Recovery - ${activity_type || 'General'}`, activity_type || 'Active Recovery', duration || 3, intensity || 'Light', 8, notes || '', JSON.stringify(analysis)]
     );
 
     res.json({
@@ -323,6 +263,202 @@ router.post('/recovery/advise', async (req, res) => {
   } catch (err) {
     console.error('AI Recovery Advice Error:', err);
     res.status(500).json({ error: 'Failed to generate recovery advice', details: err.message });
+  }
+});
+
+// AI Nutrition Recommender
+router.post('/nutrition/recommend', authenticateToken, async (req, res) => {
+  const pool = req.app.locals.pool;
+  const {
+    age,
+    sex,
+    weight_kg,
+    height_cm,
+    activity_level,
+    goal,
+    dietary_restrictions,
+    allergies,
+    cuisine_preferences,
+    notes,
+  } = req.body;
+  const user_id = req.user.id;
+
+  const systemPrompt = `You are a registered dietitian and certified sports nutritionist. Generate a personalized daily nutrition plan.
+Always respect dietary restrictions and allergies. Include macro targets (kcal, protein, carbs, fat),
+hydration, meal timing relative to workouts, and 3 example daily meal plans with portion guidance.
+Add a brief disclaimer that this is general guidance and not a medical prescription.`;
+
+  const prompt = `Build a daily nutrition recommendation for:
+- Age: ${age || 'unspecified'}
+- Sex: ${sex || 'unspecified'}
+- Weight (kg): ${weight_kg || 'unspecified'}
+- Height (cm): ${height_cm || 'unspecified'}
+- Activity level: ${activity_level || 'moderate'}
+- Goal: ${goal || 'maintenance'}
+- Dietary restrictions: ${dietary_restrictions || 'none'}
+- Allergies: ${allergies || 'none'}
+- Cuisine preferences: ${cuisine_preferences || 'flexible'}
+- Notes: ${notes || 'none'}
+
+Provide:
+1. Estimated daily calories (kcal)
+2. Macros (g protein / g carbs / g fat) and rationale
+3. 3 example meal plans (breakfast/lunch/dinner/snacks) with portions
+4. Hydration target (L/day)
+5. Pre/post workout fueling guidance
+6. Brief disclaimer`;
+
+  try {
+    const response = await callOpenRouter(prompt, systemPrompt);
+    const analysis = {
+      type: 'Nutrition Plan',
+      generatedAt: new Date().toISOString(),
+      parameters: { age, sex, weight_kg, height_cm, activity_level, goal, dietary_restrictions, allergies },
+      estimatedCaloriesKcal: extractCaloriesFromText ? extractCaloriesFromText(response) : null,
+      content: response,
+    };
+
+    // Best-effort persistence; ignore if no nutrition_plans table.
+    try {
+      await pool.query(
+        'INSERT INTO nutrition_plans (user_id, goal, content, created_at) VALUES ($1, $2, $3, NOW())',
+        [user_id, goal || 'maintenance', JSON.stringify(analysis)]
+      );
+    } catch (e) {
+      // Table may not exist yet; analysis still returned.
+    }
+
+    res.json({ success: true, analysis });
+  } catch (err) {
+    console.error('AI Nutrition Recommend Error:', err);
+    res.status(500).json({ error: 'Failed to generate nutrition plan', details: err.message });
+  }
+});
+
+// AI Injury Prevention
+router.post('/injury/prevent', authenticateToken, async (req, res) => {
+  const {
+    sport,
+    weekly_volume_hours,
+    recent_intensity,
+    history_of_injuries,
+    age,
+    asymmetries,
+    notes,
+  } = req.body;
+
+  const systemPrompt = `You are a sports physical therapist. Recommend injury prevention strategies tailored to the athlete's sport,
+volume, and injury history. Include screening tests, mobility/strength priorities, load management, and red flags.
+Add a disclaimer to seek a professional for current pain or significant past injury.`;
+
+  const prompt = `Generate an injury-prevention plan for:
+- Sport: ${sport || 'general fitness'}
+- Weekly training volume (hours): ${weekly_volume_hours || 'unspecified'}
+- Recent intensity: ${recent_intensity || 'moderate'}
+- Past injuries: ${history_of_injuries || 'none'}
+- Age: ${age || 'unspecified'}
+- Known asymmetries: ${asymmetries || 'none'}
+- Notes: ${notes || 'none'}
+
+Return a structured plan with: top risks, screening tests, weekly mobility routine, strengthening priorities,
+load-management rules, and warning signs.`;
+
+  try {
+    const response = await callOpenRouter(prompt, systemPrompt);
+    res.json({
+      success: true,
+      analysis: {
+        type: 'Injury Prevention Plan',
+        generatedAt: new Date().toISOString(),
+        parameters: { sport, weekly_volume_hours, history_of_injuries, age },
+        content: response,
+      },
+    });
+  } catch (err) {
+    console.error('AI Injury Prevent Error:', err);
+    res.status(500).json({ error: 'Failed to generate injury-prevention plan', details: err.message });
+  }
+});
+
+// AI Form Correction (text-only)
+// Mechanical text-mode counterpart to a vision-based form correction pipeline.
+// Accepts an exercise name + free-form symptoms / cues / video frame description
+// and returns structured form cues + corrective drills + safety flags.
+router.post('/form-correct', authenticateToken, async (req, res) => {
+  const {
+    exercise,
+    experience_level,
+    symptoms,
+    self_description,
+    equipment,
+    notes,
+  } = req.body;
+
+  const systemPrompt = `You are a certified strength & conditioning coach and movement specialist.
+The user CANNOT upload video — base your analysis on their text description.
+Return clear, structured advice with:
+- Likely form errors implied by the symptoms / description
+- Specific corrective cues (1 sentence each)
+- 3 corrective drills (name, sets x reps, focus)
+- Safety red flags that warrant stopping or consulting a clinician
+- A short disclaimer that this is general guidance, not medical advice.
+Keep tone supportive, body-neutral, and avoid diagnosing injuries.`;
+
+  const prompt = `Provide form-correction advice for:
+- Exercise: ${exercise || 'unspecified'}
+- Experience level: ${experience_level || 'intermediate'}
+- Symptoms or pain points: ${symptoms || 'none reported'}
+- User description of the movement: ${self_description || 'not provided'}
+- Equipment: ${equipment || 'standard'}
+- Notes: ${notes || 'none'}
+
+Return sections: Likely Errors, Cues, Corrective Drills, Red Flags, Disclaimer.`;
+
+  try {
+    const response = await callOpenRouter(prompt, systemPrompt);
+    res.json({
+      success: true,
+      analysis: {
+        type: 'Form Correction (text)',
+        generatedAt: new Date().toISOString(),
+        parameters: { exercise, experience_level, equipment },
+        content: response,
+      },
+    });
+  } catch (err) {
+    const msg = err && err.message ? err.message : '';
+    if (/OPENROUTER_API_KEY/i.test(msg)) {
+      return res.status(503).json({ error: 'AI provider not configured', details: msg });
+    }
+    console.error('AI Form Correct Error:', err);
+    res.status(500).json({ error: 'Failed to generate form-correction advice', details: msg });
+  }
+});
+
+// AI Motivation / Accountability messages
+router.post('/motivation', authenticateToken, async (req, res) => {
+  const { mood, recent_progress, upcoming_goal, channel = 'short', tone = 'encouraging' } = req.body;
+
+  const systemPrompt = `You are a positive, evidence-based fitness coach. Generate motivational, non-toxic, body-neutral
+messages tailored to the user's mood and goals. Avoid shaming language and avoid medical claims.`;
+
+  const prompt = `Create a ${channel === 'short' ? '1-3 sentence' : '1 paragraph'} motivational message in a ${tone} tone for a user.
+Mood: ${mood || 'neutral'}
+Recent progress: ${recent_progress || 'unspecified'}
+Upcoming goal: ${upcoming_goal || 'general fitness'}
+
+Also provide 3 short, concrete actions they can take today.`;
+
+  try {
+    const response = await callOpenRouter(prompt, systemPrompt);
+    res.json({
+      success: true,
+      message: response,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('AI Motivation Error:', err);
+    res.status(500).json({ error: 'Failed to generate motivational message', details: err.message });
   }
 });
 

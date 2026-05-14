@@ -23,6 +23,9 @@ import TermsOfService from './components/TermsOfService';
 import Contact from './components/Contact';
 import AdminPanel from './components/AdminPanel';
 import Onboarding from './components/Onboarding';
+import AIInsights from './components/AIInsights';
+import AICoachAdvisor from './components/AICoachAdvisor';
+import IntegrationsAndMarketplace from './components/IntegrationsAndMarketplace';
 import './App.css';
 
 function App() {
@@ -112,6 +115,9 @@ function App() {
           <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
           <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+          <Route path="/ai-insights" element={<ProtectedRoute><AIInsights /></ProtectedRoute>} />
+          <Route path="/ai-coach-advisor" element={<ProtectedRoute><AICoachAdvisor /></ProtectedRoute>} />
+          <Route path="/integrations-marketplace" element={<ProtectedRoute><IntegrationsAndMarketplace /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
         </Routes>
       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import './Sidebar.css';
 
 function Sidebar({ user, onLogout, onThemeToggle, theme }) {
@@ -15,13 +15,10 @@ function Sidebar({ user, onLogout, onThemeToggle, theme }) {
 
   const fetchUnreadCount = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('/api/notifications/unread-count', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('/api/notifications/unread-count');
       setUnreadCount(res.data.count);
     } catch (err) {
-      // ignore
+      // ignore — interceptor handles 401
     }
   };
 
@@ -32,6 +29,8 @@ function Sidebar({ user, onLogout, onThemeToggle, theme }) {
     { path: '/running', label: 'Running', icon: '🏃' },
     { path: '/team', label: 'Team', icon: '⚽' },
     { path: '/recovery', label: 'Recovery', icon: '💤' },
+    { path: '/ai-insights', label: 'AI Insights', icon: '🧠' },
+    { path: '/ai-coach-advisor', label: 'AI Advisor', icon: '🤖' },
     { path: '/calendar', label: 'Calendar', icon: '📅' },
     { path: '/progress', label: 'Progress', icon: '📈' },
     { path: '/export', label: 'Export', icon: '📥' },
