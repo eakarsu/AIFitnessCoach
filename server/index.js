@@ -130,6 +130,7 @@ app.use('/api/predictive-performance', require('./routes/predictivePerformance')
 app.use('/api/injury-prediction', require('./routes/injuryPrediction'));
 app.use('/api/group-challenges', require('./routes/groupChallenges'));
 app.use('/api/recovery-protocols', require('./routes/recoveryProtocols'));
+app.use('/api/training-load-balance', require('./routes/trainingLoadBalance'));
 
 // Enhanced health check
 app.get('/api/health', async (req, res) => {

@@ -29,6 +29,7 @@ function Sidebar({ user, onLogout, onThemeToggle, theme }) {
     { path: '/running', label: 'Running', icon: '🏃' },
     { path: '/team', label: 'Team', icon: '⚽' },
     { path: '/recovery', label: 'Recovery', icon: '💤' },
+    { path: '/training-load-balance', label: 'Load Balance', icon: '⚖️' },
     { path: '/ai-insights', label: 'AI Insights', icon: '🧠' },
     { path: '/ai-coach-advisor', label: 'AI Advisor', icon: '🤖' },
     { path: '/calendar', label: 'Calendar', icon: '📅' },

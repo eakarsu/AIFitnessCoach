@@ -9,6 +9,7 @@ import GolfList from './components/GolfList';
 import RunningList from './components/RunningList';
 import TeamList from './components/TeamList';
 import RecoveryList from './components/RecoveryList';
+import TrainingLoadBalance from './components/TrainingLoadBalance';
 import Sidebar from './components/Sidebar';
 import Profile from './components/Profile';
 import Settings from './components/Settings';
@@ -27,6 +28,9 @@ import AIInsights from './components/AIInsights';
 import AICoachAdvisor from './components/AICoachAdvisor';
 import IntegrationsAndMarketplace from './components/IntegrationsAndMarketplace';
 import './App.css';
+
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -94,6 +98,9 @@ function App() {
     <Router>
       <div className="App" data-theme={theme}>
         <Routes>
+        <Route path="/codex/custom-viz" element={<ProtectedRoute><CodexCustomVizFeature /></ProtectedRoute>} />
+        <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} />
+
           <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login onLogin={handleLogin} />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -105,6 +112,7 @@ function App() {
           <Route path="/running" element={<ProtectedRoute><RunningList user={user} onLogout={handleLogout} /></ProtectedRoute>} />
           <Route path="/team" element={<ProtectedRoute><TeamList user={user} onLogout={handleLogout} /></ProtectedRoute>} />
           <Route path="/recovery" element={<ProtectedRoute><RecoveryList user={user} onLogout={handleLogout} /></ProtectedRoute>} />
+          <Route path="/training-load-balance" element={<ProtectedRoute><TrainingLoadBalance /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile user={user} /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings onThemeToggle={toggleTheme} theme={theme} /></ProtectedRoute>} />
           <Route path="/progress" element={<ProtectedRoute><ProgressCharts /></ProtectedRoute>} />
