@@ -1,54 +1,13 @@
-name: CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
+name: ci
+on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: aifitness_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_URL: postgresql://test:test@localhost:5432/aifitness_test
-      JWT_SECRET: test-secret
-      NODE_ENV: test
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm install
-      - run: cd client && npm install --legacy-peer-deps
-      - run: cd client && npm run build
-      - run: npm test
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm install
-      - run: cd client && npm install --legacy-peer-deps
-      - run: cd client && npx eslint src/ --max-warnings 0 || true
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm ci --prefix client
+      - run: npm run build --prefix client

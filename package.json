@@ -7,9 +7,10 @@
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server/index.js",
     "client": "cd client && npm start",
-    "install-all": "npm install && cd client && npm install",
-    "seed": "node server/seed.js",
-    "setup-db": "node server/setupDb.js",
+    "bootstrap": "bash scripts/bootstrap.sh",
+    "migrate": "bash scripts/migrate.sh",
+    "seed:demo": "bash scripts/seed-demo.sh",
+    "test:unit": "node --test server/tests/*.test.js",
     "test": "jest --forceExit --detectOpenHandles",
     "test:server": "jest server/__tests__/ --forceExit --detectOpenHandles",
     "test:client": "cd client && npm test -- --watchAll=false"

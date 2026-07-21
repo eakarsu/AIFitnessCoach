@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { authValidation } = require('../middleware/validate');
-const { getJwtSecret } = require('../middleware/auth');
+const { authenticateToken, getJwtSecret } = require('../middleware/auth');
 
 // Login
 router.post('/login', authValidation.login, async (req, res) => {
@@ -93,7 +93,6 @@ router.post('/register', authValidation.register, async (req, res) => {
     );
 
     // In dev mode, log verification token instead of sending email
-    console.log(`Verification token for ${email}: ${verificationToken}`);
 
     res.json({ token, user });
   } catch (err) {
@@ -115,6 +114,19 @@ router.get('/verify', async (req, res) => {
     res.json({ valid: true, user: decoded });
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const result = await req.app.locals.pool.query(
+      'SELECT id, email, name, role, email_verified FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    if (!result.rows[0]) return res.status(404).json({ error: 'User not found' });
+    return res.json({ user: result.rows[0] });
+  } catch (err) {
+    return res.status(500).json({ error: 'Unable to load session user' });
   }
 });
 
@@ -169,7 +181,6 @@ router.post('/forgot-password', async (req, res) => {
     );
 
     // In dev mode, log token. In production, send email
-    console.log(`Password reset token for ${email}: ${resetToken}`);
 
     res.json({ message: 'If that email exists, a reset link has been sent.' });
   } catch (err) {
@@ -183,8 +194,8 @@ router.post('/reset-password', async (req, res) => {
   const pool = req.app.locals.pool;
   const { token, password } = req.body;
 
-  if (!token || !password || password.length < 6) {
-    return res.status(400).json({ error: 'Valid token and password (min 6 chars) required' });
+  if (!token || !password || password.length < 12) {
+    return res.status(400).json({ error: 'Valid token and password (min 12 chars) required' });
   }
 
   try {
@@ -245,7 +256,6 @@ router.post('/resend-verification', async (req, res) => {
       [verificationToken, email]
     );
 
-    console.log(`New verification token for ${email}: ${verificationToken}`);
     res.json({ message: 'Verification email sent' });
   } catch (err) {
     console.error('Resend verification error:', err);

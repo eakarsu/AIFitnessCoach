@@ -1,4 +1,4 @@
-const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator, rateLimit } = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('./auth');
 
@@ -42,7 +42,7 @@ const aiLimiter = rateLimit({
         if (decoded && decoded.id) return `user:${decoded.id}`;
       } catch (_) { /* fall through to ip */ }
     }
-    return req.ip;
+    return ipKeyGenerator(req.ip);
   }
 });
 

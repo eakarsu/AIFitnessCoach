@@ -16,7 +16,7 @@ const authValidation = {
   ],
   register: [
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('password').isLength({ min: 12 }).withMessage('Password must be at least 12 characters'),
     body('name').trim().isLength({ min: 1, max: 255 }).withMessage('Name is required'),
     handleValidation
   ]

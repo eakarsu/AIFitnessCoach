@@ -3,20 +3,6 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
-// Ensure password_reset_tokens table exists
-const ensureTable = async (pool) => {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS password_reset_tokens (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER,
-      token VARCHAR(255),
-      expires_at TIMESTAMP,
-      used BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMP DEFAULT NOW()
-    )
-  `);
-};
-
 // POST /api/auth/forgot-password
 router.post('/forgot-password', async (req, res) => {
   const pool = req.app.locals.pool;
@@ -27,8 +13,6 @@ router.post('/forgot-password', async (req, res) => {
   }
 
   try {
-    await ensureTable(pool);
-
     const userResult = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
 
     // Always respond the same to avoid user enumeration
@@ -86,7 +70,7 @@ router.post('/forgot-password', async (req, res) => {
         console.error('Failed to send password reset email:', emailErr.message);
       }
     } else {
-      console.log(`[PASSWORD RESET] Reset link for ${email}: ${resetUrl}`);
+      console.warn('Password reset email was not sent because SMTP is not configured.');
     }
 
     res.json({ message: 'If that email exists, a reset link has been sent.' });
@@ -105,13 +89,11 @@ router.post('/reset-password', async (req, res) => {
     return res.status(400).json({ error: 'Token and newPassword are required' });
   }
 
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  if (newPassword.length < 12) {
+    return res.status(400).json({ error: 'Password must be at least 12 characters' });
   }
 
   try {
-    await ensureTable(pool);
-
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     const tokenResult = await pool.query(

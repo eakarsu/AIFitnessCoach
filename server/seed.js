@@ -7,19 +7,21 @@ const pool = new Pool({
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'ai_fitness_coach',
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
+  password: process.env.DB_PASSWORD,
 });
 
 const seedData = async () => {
+  if (process.env.RESET_DATABASE !== '1' || process.env.SEED_DEMO_DATA !== '1') throw new Error('Set RESET_DATABASE=1 and SEED_DEMO_DATA=1 for destructive demo seed');
+  if (!process.env.SEED_DEMO_PASSWORD || process.env.SEED_DEMO_PASSWORD.length < 12) throw new Error('SEED_DEMO_PASSWORD must be at least 12 characters');
   try {
     // Clear existing data
     await pool.query('TRUNCATE users, workouts, golf_swings, running_sessions, team_formations, recovery_plans, user_profiles, user_settings, notifications, feedback, file_uploads, audit_logs RESTART IDENTITY CASCADE');
 
     // Seed users
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    const hashedPassword = await bcrypt.hash(process.env.SEED_DEMO_PASSWORD, 12);
     const userResult = await pool.query(
       'INSERT INTO users (email, password, name, role, email_verified) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-      ['demo@aifitness.com', hashedPassword, 'Demo User', 'admin', true]
+      ['demo@fitness.invalid', hashedPassword, 'Demo User', 'admin', true]
     );
     const userId = userResult.rows[0].id;
 
@@ -275,7 +277,7 @@ const seedData = async () => {
     }
 
     console.log('Seed data inserted successfully!');
-    console.log('Demo credentials: demo@aifitness.com / password123');
+    console.log('Demo data seeded with environment-provided credentials.');
   } catch (err) {
     console.error('Error seeding data:', err);
   } finally {
