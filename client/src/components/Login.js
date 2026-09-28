@@ -64,7 +64,7 @@ function Login({ onLogin }) {
           </button>
 
           <button type="button" className="btn btn-secondary demo-btn" onClick={fillDemoCredentials}>
-            Fill Demo Credentials
+            Auto Fill Demo Credentials
           </button>
         </form>
 
