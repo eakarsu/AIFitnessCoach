@@ -63,8 +63,8 @@ function Login({ onLogin }) {
             {loading ? (<><span className="btn-spinner"></span>Signing in...</>) : 'Sign In'}
           </button>
 
-          <button type="button" className="btn btn-secondary demo-btn" onClick={fillDemoCredentials}>
-            Auto Fill Demo Credentials
+          <button type="button" className="btn btn-secondary demo-btn" disabled={loading || !process.env.REACT_APP_DEMO_EMAIL || !process.env.REACT_APP_DEMO_PASSWORD} onClick={async (event) => { await (fillDemoCredentials)(event); window.setTimeout(() => { const form = document.querySelector("form"); if (form) form.requestSubmit(); }, 150); }}>
+            Log In as Demo
           </button>
         </form>
 

@@ -1,3 +1,4 @@
+import FormattedAIReport from './FormattedAIReport';
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
@@ -78,21 +79,7 @@ function RecoveryList({ user }) {
     finally { setAiLoading(false); }
   };
 
-  const renderAiContent = (content) => {
-    if (!content) return null;
-    return content.split('\n').map((line, i) => {
-      if (line.startsWith('```')) return null;
-      if (line.startsWith('# ')) return <h2 key={i} style={{ color: '#00b894', marginTop: '1.5rem', marginBottom: '0.75rem', fontSize: '1.4rem' }}>{line.replace('# ', '')}</h2>;
-      if (line.startsWith('## ')) return <h3 key={i} style={{ color: '#667eea', marginTop: '1.25rem', marginBottom: '0.5rem', fontSize: '1.2rem' }}>{line.replace('## ', '')}</h3>;
-      if (line.startsWith('### ')) return <h4 key={i} style={{ color: '#f093fb', marginTop: '1rem', marginBottom: '0.5rem', fontSize: '1.1rem' }}>{line.replace('### ', '')}</h4>;
-      if (line.startsWith('- ') || line.startsWith('* ')) return <li key={i} style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>{line.replace(/^[-*] /, '')}</li>;
-      if (line.match(/^\d+\./)) return <li key={i} style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>{line.replace(/^\d+\.\s*/, '')}</li>;
-      if (line.trim() === '') return <br key={i} />;
-      return <p key={i} style={{ marginBottom: '0.5rem', lineHeight: '1.7' }}>{line}</p>;
-    });
-  };
-
-  if (loading) return <div className="page-container"><div className="loading-screen"><div className="loading-spinner"></div><p>Loading recovery plans...</p></div></div>;
+  const renderAiContent = (value) => <FormattedAIReport response={value} />;
 
   return (
     <div className="page-container">
@@ -112,7 +99,7 @@ function RecoveryList({ user }) {
         {aiAnalysis && !showModal && (
           <div className="ai-analysis">
             <div className="ai-analysis-header"><span className="ai-icon">🤖</span><span className="ai-analysis-title">AI Recovery Recommendation</span></div>
-            <div className="ai-analysis-content">{renderAiContent(aiAnalysis.content)}</div>
+            <div className="ai-analysis-content">{renderAiContent(aiAnalysis)}</div>
             <div className="ai-analysis-meta">Generated at: {new Date(aiAnalysis.generatedAt).toLocaleString()}</div>
           </div>
         )}
@@ -191,7 +178,7 @@ function RecoveryList({ user }) {
               {aiAnalysis && (
                 <div className="ai-analysis">
                   <div className="ai-analysis-header"><span className="ai-icon">🤖</span><span className="ai-analysis-title">AI Recovery Recommendation</span></div>
-                  <div className="ai-analysis-content">{renderAiContent(aiAnalysis.content)}</div>
+                  <div className="ai-analysis-content">{renderAiContent(aiAnalysis)}</div>
                   <div className="ai-analysis-meta">Generated at: {new Date(aiAnalysis.generatedAt).toLocaleString()}</div>
                 </div>
               )}

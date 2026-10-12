@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { aiApi } from '../services/api';
+
+import CompleteTrainingExamples from "./CompleteTrainingExamples";
+import FormattedAIReport from "./FormattedAIReport";
+import React, { useState, useEffect } from 'react';
+import api, { aiApi } from '../services/api';
 
 /**
  * Surfaces the 5 advanced (formerly dead-code) AI endpoints from server/routes/aiNew.js
@@ -14,6 +17,7 @@ import { aiApi } from '../services/api';
  * markdown-ish AI response with the same renderer used by the legacy lists.
  */
 function AIInsights() {
+
   const [tab, setTab] = useState('periodization');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,6 +28,15 @@ function AIInsights() {
   const [trendForm, setTrendForm] = useState({ sport: 'running', metric: 'pace' });
   const [nutritionForm, setNutritionForm] = useState({ goal: 'muscle_gain', dietary_restrictions: '', weight_kg: 75, height_cm: 175, age: 30 });
   const [challengeForm, setChallengeForm] = useState({ team_id: '', challenge_type: 'points-based', duration_days: 7 });
+
+  const [teams, setTeams] = useState([]);
+  useEffect(() => { api.get('/api/team?limit=100').then(res => setTeams(res.data.data || res.data || [])).catch(() => setTeams([])); }, []);
+  const fillExample = (index) => {
+    if (tab === 'periodization') setPeriodForm({ goal: ['Build general strength', 'Develop aerobic endurance', 'Consolidate training consistency'][index], duration_weeks: [4, 8, 6][index], available_days: [3, 4, 2][index], sports: ['Strength training', 'Running and cycling', 'Walking and mobility'][index] });
+    if (tab === 'trend') setTrendForm({ sport: ['running', 'golf', 'strength'][index], metric: ['pace', 'clubhead speed', 'estimated one-rep maximum'][index] });
+    if (tab === 'nutrition') setNutritionForm(current => ({ goal: ['maintenance', 'endurance', 'muscle_gain'][index], dietary_restrictions: current.dietary_restrictions || 'Fictional example: vegetarian preference; confirm actual restrictions and allergies.', weight_kg: [75, 68, 82][index], height_cm: [175, 168, 182][index], age: [30, 40, 35][index] }));
+    if (tab === 'challenge') setChallengeForm(current => ({ team_id: current.team_id || String(teams[0]?.id || ''), challenge_type: ['Consistency', 'Activity minutes', 'Recovery habits'][index], duration_days: [7, 14, 10][index] }));
+  };
 
   const run = async (fn) => {
     setLoading(true);
@@ -46,21 +59,6 @@ function AIInsights() {
     { id: 'nutrition', label: 'Nutrition Plan', icon: '🥗' },
     { id: 'challenge', label: 'Team Challenge', icon: '🏆' },
   ];
-
-  const renderContent = (text) => {
-    if (!text) return null;
-    return text.split('\n').map((line, i) => {
-      if (line.startsWith('```')) return null;
-      if (line.startsWith('# ')) return <h2 key={i} style={{ color: '#667eea', marginTop: '1.5rem', marginBottom: '0.75rem' }}>{line.replace('# ', '')}</h2>;
-      if (line.startsWith('## ')) return <h3 key={i} style={{ color: '#f093fb', marginTop: '1.25rem', marginBottom: '0.5rem' }}>{line.replace('## ', '')}</h3>;
-      if (line.startsWith('### ')) return <h4 key={i} style={{ color: '#38ef7d', marginTop: '1rem', marginBottom: '0.5rem' }}>{line.replace('### ', '')}</h4>;
-      if (line.startsWith('- ') || line.startsWith('* ')) return <li key={i} style={{ marginLeft: '1.5rem' }}>{line.replace(/^[-*] /, '')}</li>;
-      if (line.match(/^\d+\./)) return <li key={i} style={{ marginLeft: '1.5rem' }}>{line.replace(/^\d+\.\s*/, '')}</li>;
-      if (line.startsWith('**') && line.endsWith('**')) return <p key={i} style={{ fontWeight: 600 }}>{line.replace(/\*\*/g, '')}</p>;
-      if (line.trim() === '') return <br key={i} />;
-      return <p key={i} style={{ lineHeight: 1.7 }}>{line}</p>;
-    });
-  };
 
   // Pick the .content / .challenge / etc text out of whichever shape the
   // server returned — these endpoints all wrap their text differently.
@@ -98,6 +96,8 @@ function AIInsights() {
           ))}
         </div>
 
+        {tab !== 'injury' && <CompleteTrainingExamples onFill={fillExample} disabled={loading} />}
+        {tab === 'challenge' && !challengeForm.team_id && <p role="status">Select a real team from the Team page before generating a challenge.</p>}
         {tab === 'periodization' && (
           <div className="card" style={{ padding: '1.5rem' }}>
             <h3>Periodization Plan</h3>
@@ -194,9 +194,7 @@ function AIInsights() {
           <div className="ai-analysis" style={{ marginTop: '1.5rem' }}>
             <div className="ai-analysis-header"><span className="ai-icon">🤖</span><span className="ai-analysis-title">AI Result</span></div>
             <div className="ai-analysis-content">
-              {pickResultText(result)
-                ? renderContent(pickResultText(result))
-                : <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(result, null, 2)}</pre>}
+              <FormattedAIReport response={pickResultText(result) || result} />
             </div>
           </div>
         )}

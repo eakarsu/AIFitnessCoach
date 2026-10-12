@@ -1,3 +1,6 @@
+
+import CompleteTrainingExamples from "./CompleteTrainingExamples";
+import FormattedAIReport from "./FormattedAIReport";
 import React, { useState } from 'react';
 import api from '../services/api';
 
@@ -10,6 +13,7 @@ import api from '../services/api';
  * Mirrors AIInsights.js styling (tabs / form-row / btn-ai / ai-analysis).
  */
 function AICoachAdvisor() {
+
   const [tab, setTab] = useState('nutrition');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -47,6 +51,13 @@ function AICoachAdvisor() {
     notes: '',
   });
 
+  const fillExample = (index) => {
+    if (tab === 'nutrition') setNutritionForm(current => ({ goal: ['maintenance', 'endurance', 'muscle_gain'][index], dietary_restrictions: current.dietary_restrictions || 'Fictional example: vegetarian preference; confirm actual restrictions and allergies.', activity_level: ['light', 'moderate', 'vigorous'][index], weight_kg: [75, 68, 82][index], height_cm: [175, 168, 182][index], age: [30, 40, 35][index], sex: 'unspecified' }));
+    if (tab === 'injury') setInjuryForm(current => ({ sport: ['running', 'cycling', 'strength'][index], history: current.history || 'Fictional example: injury history has not been verified. Ask for actual history before personalized advice.', weekly_volume: ['3 hours per week', '4 hours per week', '2 hours per week'][index], notes: current.notes || 'Fictional training review. Identify evidence needed, stop-exercise red flags and qualified clinician follow-up; do not infer clearance.' }));
+    if (tab === 'motivation') setMotivationForm({ mood: ['okay', 'good', 'low'][index], goal: ['consistency', 'enjoyment', 'recovery'][index], context: ['Fictional example: returning to a routine after a busy workweek.', 'Fictional example: planning a social walk with a friend.', 'Fictional example: scheduling rest after several active days.'][index] });
+    if (tab === 'form') setFormCorrectForm(current => ({ exercise: ['squat', 'deadlift', 'push-up'][index], experience_level: ['beginner', 'intermediate', 'beginner'][index], symptoms: current.symptoms || 'Fictional example: pain symptoms have not been confirmed; ask before suggesting a correction.', self_description: current.self_description || 'Fictional movement description: tempo becomes uneven on the final repetition. Request observation before confirming a technique issue.', equipment: ['bodyweight', 'barbell', 'bodyweight'][index], notes: current.notes || 'Draft educational cues only; preserve actual symptoms and seek qualified assessment for pain.' }));
+  };
+
   const run = async (fn) => {
     setLoading(true);
     setError(null);
@@ -67,20 +78,6 @@ function AICoachAdvisor() {
     { id: 'motivation', label: 'Motivation', icon: '💪' },
     { id: 'form', label: 'Form Correct (Text)', icon: '🧍' },
   ];
-
-  const renderText = (text) => {
-    if (!text) return null;
-    return text.split('\n').map((line, i) => {
-      if (line.startsWith('```')) return null;
-      if (line.startsWith('# ')) return <h2 key={i} style={{ color: '#667eea', marginTop: '1.5rem', marginBottom: '0.75rem' }}>{line.replace('# ', '')}</h2>;
-      if (line.startsWith('## ')) return <h3 key={i} style={{ color: '#f093fb', marginTop: '1.25rem', marginBottom: '0.5rem' }}>{line.replace('## ', '')}</h3>;
-      if (line.startsWith('### ')) return <h4 key={i} style={{ color: '#38ef7d', marginTop: '1rem', marginBottom: '0.5rem' }}>{line.replace('### ', '')}</h4>;
-      if (line.startsWith('- ') || line.startsWith('* ')) return <li key={i} style={{ marginLeft: '1.5rem' }}>{line.replace(/^[-*] /, '')}</li>;
-      if (line.match(/^\d+\./)) return <li key={i} style={{ marginLeft: '1.5rem' }}>{line.replace(/^\d+\.\s*/, '')}</li>;
-      if (line.trim() === '') return <br key={i} />;
-      return <p key={i} style={{ lineHeight: 1.7 }}>{line}</p>;
-    });
-  };
 
   const pickResultText = (data) => {
     if (!data) return null;
@@ -117,6 +114,7 @@ function AICoachAdvisor() {
           ))}
         </div>
 
+        <CompleteTrainingExamples onFill={fillExample} disabled={loading} />
         {tab === 'nutrition' && (
           <div className="card" style={{ padding: '1.5rem' }}>
             <h3>Daily Nutrition Recommendation</h3>
@@ -212,7 +210,7 @@ function AICoachAdvisor() {
                 <textarea className="form-input" rows={2} value={injuryForm.notes} onChange={(e) => setInjuryForm({ ...injuryForm, notes: e.target.value })} placeholder="Anything else the coach should know" />
               </div>
             </div>
-            <button className="btn btn-ai" disabled={loading} onClick={() => run(() => api.post('/api/ai/injury/prevent', injuryForm))}>
+            <button className="btn btn-ai" disabled={loading} onClick={() => run(() => api.post('/api/ai/injury/prevent', { ...injuryForm, weekly_volume_hours: injuryForm.weekly_volume, history_of_injuries: injuryForm.history }))}>
               {loading ? 'Building plan...' : 'Build Prevention Plan'}
             </button>
           </div>
@@ -316,9 +314,7 @@ function AICoachAdvisor() {
           <div className="ai-analysis" style={{ marginTop: '1.5rem' }}>
             <div className="ai-analysis-header"><span className="ai-icon">🤖</span><span className="ai-analysis-title">AI Result</span></div>
             <div className="ai-analysis-content">
-              {pickResultText(result)
-                ? renderText(pickResultText(result))
-                : <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(result, null, 2)}</pre>}
+              <FormattedAIReport response={pickResultText(result) || result} />
             </div>
           </div>
         )}

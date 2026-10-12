@@ -1,3 +1,4 @@
+import FormattedAIReport from './FormattedAIReport';
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
@@ -146,31 +147,7 @@ function GolfList({ user }) {
     }
   };
 
-  const renderAiContent = (content) => {
-    if (!content) return null;
-    const lines = content.split('\n');
-    return lines.map((line, index) => {
-      if (line.startsWith('```')) return null;
-      if (line.startsWith('# ')) return <h2 key={index} style={{ color: '#11998e', marginTop: '1.5rem', marginBottom: '0.75rem', fontSize: '1.4rem' }}>{line.replace('# ', '')}</h2>;
-      if (line.startsWith('## ')) return <h3 key={index} style={{ color: '#38ef7d', marginTop: '1.25rem', marginBottom: '0.5rem', fontSize: '1.2rem' }}>{line.replace('## ', '')}</h3>;
-      if (line.startsWith('### ')) return <h4 key={index} style={{ color: '#667eea', marginTop: '1rem', marginBottom: '0.5rem', fontSize: '1.1rem' }}>{line.replace('### ', '')}</h4>;
-      if (line.startsWith('- ') || line.startsWith('* ')) return <li key={index} style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>{line.replace(/^[-*] /, '')}</li>;
-      if (line.match(/^\d+\./)) return <li key={index} style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>{line.replace(/^\d+\.\s*/, '')}</li>;
-      if (line.trim() === '') return <br key={index} />;
-      return <p key={index} style={{ marginBottom: '0.5rem', lineHeight: '1.7' }}>{line}</p>;
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="page-container">
-        <div className="loading-screen">
-          <div className="loading-spinner"></div>
-          <p>Loading golf swings...</p>
-        </div>
-      </div>
-    );
-  }
+  const renderAiContent = (value) => <FormattedAIReport response={value} />;
 
   return (
     <div className="page-container">
@@ -199,7 +176,7 @@ function GolfList({ user }) {
               <span className="ai-analysis-title">AI Golf Swing Analysis</span>
             </div>
             <div className="ai-analysis-content">
-              {renderAiContent(aiAnalysis.content)}
+              {renderAiContent(aiAnalysis)}
             </div>
             <div className="ai-analysis-meta">
               Generated at: {new Date(aiAnalysis.generatedAt).toLocaleString()}
@@ -290,7 +267,7 @@ function GolfList({ user }) {
               {aiAnalysis && (
                 <div className="ai-analysis">
                   <div className="ai-analysis-header"><span className="ai-icon">🤖</span><span className="ai-analysis-title">AI Swing Analysis</span></div>
-                  <div className="ai-analysis-content">{renderAiContent(aiAnalysis.content)}</div>
+                  <div className="ai-analysis-content">{renderAiContent(aiAnalysis)}</div>
                   <div className="ai-analysis-meta">Generated at: {new Date(aiAnalysis.generatedAt).toLocaleString()}</div>
                 </div>
               )}
