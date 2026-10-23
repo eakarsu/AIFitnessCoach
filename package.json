@@ -11,9 +11,10 @@
     "migrate": "bash scripts/migrate.sh",
     "seed:demo": "bash scripts/seed-demo.sh",
     "test:unit": "node --test server/tests/*.test.js",
-    "test": "jest --forceExit --detectOpenHandles",
+    "test": "jest --forceExit --detectOpenHandles --runInBand && npm run test:domain && npm run test:client",
     "test:server": "jest server/__tests__/ --forceExit --detectOpenHandles",
-    "test:client": "cd client && npm test -- --watchAll=false"
+    "test:client": "cd client && CI=true npx react-scripts test --watchAll=false",
+    "test:domain": "node --test server/tests/coachingWorkflow.test.js server/tests/wave35.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -36,5 +37,13 @@
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
     "supertest": "^6.3.4"
+  },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/client/",
+      "coachingWorkflow\\.test\\.js",
+      "wave35\\.test\\.js"
+    ]
   }
 }

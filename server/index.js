@@ -105,6 +105,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/auth', passwordResetRoutes);
 app.use('/api/ai', aiNewRoutes);
 app.use('/api/coaching-workflow', require('./routes/coachingWorkflow'));
+app.use('/api/tasks', require('./routes/tasks').createTasksRouter(require('./middleware/auth').authenticateToken));
 
 // Enhanced health check
 app.get('/api/health', async (req, res) => {

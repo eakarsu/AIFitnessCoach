@@ -24,11 +24,12 @@ describe('Login Component', () => {
     expect(screen.getByText(/forgot your password/i)).toBeInTheDocument();
   });
 
-  it('fills demo credentials on button click', () => {
+  it('offers no demo-credential shortcut', () => {
     renderLogin();
-    fireEvent.click(screen.getByText(/fill demo credentials/i));
-    expect(screen.getByLabelText(/email/i)).toHaveValue('demo@aifitness.com');
-    expect(screen.getByLabelText(/password/i)).toHaveValue('password123');
+    expect(screen.queryByText(/fill demo credentials/i)).toBeNull();
+    expect(screen.queryByText(/log in as demo/i)).toBeNull();
+    expect(screen.getByLabelText(/email/i)).toHaveValue('');
+    expect(screen.getByLabelText(/password/i)).toHaveValue('');
   });
 
   it('shows features list', () => {
